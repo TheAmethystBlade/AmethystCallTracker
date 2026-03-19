@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Call Tracker</title>
+    <style>
+        /* Base Light Theme */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; padding: 20px; max-width: 800px; margin: 0 auto; transition: background-color 0.3s, color 0.3s; }
+        
+        /* Header & Hamburger Menu */
+        .header-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: relative; }
+        .header-container h1 { margin: 0; color: #2c3e50; transition: color 0.3s; }
+        
+        .menu-container { position: relative; }
+        .hamburger-btn { background: none; border: none; font-size: 28px; cursor: pointer; color: #2c3e50; padding: 0 5px; transition: color 0.3s; }
+        .hamburger-btn:focus { outline: none; }
+        
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; overflow: hidden; z-index: 100; min-width: 170px; border: 1px solid #eee; margin-top: 5px; }
+        .dropdown-menu.show { display: block; }
+        .menu-item { display: block; width: 100%; text-align: left; padding: 12px 15px; border: none; background: none; cursor: pointer; font-size: 15px; color: #333; transition: background-color 0.2s; font-family: inherit; font-weight: bold; }
+        .menu-item:hover { background-color: #f4f7f6; }
+        .menu-divider { height: 1px; background-color: #eee; margin: 0; }
+        
+        .form-container, .toolbar-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; transition: background-color 0.3s; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .hint-text { font-size: 12px; color: #666; font-weight: normal; margin-left: 5px; }
+        input[type="text"], input[type="datetime-local"], select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; background-color: #fff; color: #333; }
+        input[type="datetime-local"]:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed; }
+        textarea { resize: vertical; }
+        .submit-btn { background-color: #3498db; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; }
+        .submit-btn:hover { background-color: #2980b9; }
+        .cancel-edit-btn { background-color: #95a5a6; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; font-weight: bold; margin-top: 10px; display: none; }
+        .cancel-edit-btn:hover { background-color: #7f8c8d; }
+        
+        /* Flexbox for Date and Checkbox */
+        .time-input-row { display: flex; align-items: center; gap: 15px; }
+        .asap-label { font-weight: normal; margin: 0; display: flex; align-items: center; white-space: nowrap; cursor: pointer; user-select: none; }
+        .asap-checkbox { width: auto !important; margin-right: 8px; cursor: pointer; }
+
+        /* Toolbar (Search only now) */
+        .toolbar-container { display: flex; padding: 15px 20px; }
+        .search-input { flex-grow: 1; border: 2px solid #3498db !important; font-size: 16px; margin: 0; }
+        .search-input:focus { outline: none; border-color: #2980b9 !important; }
+
+        /* Tracker List Styles */
+        .call-card { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; transition: background-color 0.3s; }
+        .call-card h3 { margin-top: 0; margin-bottom: 10px; padding-right: 250px; } 
+        .call-card p { margin: 5px 0; font-size: 14px; }
+        .call-notes { background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 3px solid #ccc; font-style: italic; }
+        
+        /* Action Buttons */
+        .card-actions { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; }
+        .action-btn { padding: 6px 10px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .edit-btn { background-color: #7f8c8d; color: white; }
+        .edit-btn:hover { background-color: #636e72; }
+        .followup-select { background-color: #9b59b6; color: white; border: none; padding: 6px 10px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; width: auto; appearance: auto; }
+        .followup-select:hover { background-color: #8e44ad; }
+        .followup-select option { background-color: #fff; color: #333; }
+        .delete-btn { background-color: #e74c3c; color: white; }
+        .delete-btn:hover { background-color: #c0392b; }
+
+        /* Urgency Color Coding */
+        .urgency-High { border-left: 6px solid #e74c3c; background-color: #fdfbfb; }
+        .urgency-Medium { border-left: 6px solid #f1c40f; background-color: #fdfbfb; }
+        .urgency-Low { border-left: 6px solid #2ecc71; background-color: #fdfbfb; }
+        .urgency-tag { font-weight: bold; padding: 3px 6px; border-radius: 4px; color: #fff; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+        .tag-High { background-color: #e74c3c; }
+        .tag-Medium { background-color: #f1c40f; color: #333; }
+        .tag-Low { background-color: #2ecc71; }
+        
+        /* Empty State */
+        .empty-message { text-align: center; color: #7f8c8d; font-style: italic; margin-top: 30px; }
+
+        /* --- DARK MODE OVERRIDES --- */
+        body.dark-mode { background-color: #1a1a1a; color: #e0e0e0; }
+        body.dark-mode .header-container h1 { color: #ecf0f1; }
+        body.dark-mode .hamburger-btn { color: #ecf0f1; }
+        body.dark-mode .dropdown-menu { background-color: #2c2c2c; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-color: #444; }
+        body.dark-mode .menu-item { color: #e0e0e0; }
+        body.dark-mode .menu-item:hover { background-color: #3b3b3b; }
+        body.dark-mode .menu-divider { background-color: #444; }
+        body.dark-mode .form-container, body.dark-mode .toolbar-container, body.dark-mode .call-card { background-color: #2c2c2c; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        body.dark-mode input[type="text"], body.dark-mode input[type="datetime-local"], body.dark-mode select, body.dark-mode textarea { background-color: #3b3b3b; color: #fff; border-color: #555; }
+        body.dark-mode input[type="datetime-local"]:disabled { background-color: #2a2a2a; color: #555; }
+        body.dark-mode .hint-text { color: #aaa; }
+        body.dark-mode .call-notes { background-color: #363636; border-left: 3px solid #777; color: #ccc; }
+        body.dark-mode .followup-select option { background-color: #2c2c2c; color: #fff; }
+        body.dark-mode .urgency-High { background-color: #332626; }
+        body.dark-mode .urgency-Medium { background-color: #333123; }
+        body.dark-mode .urgency-Low { background-color: #253128; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>Client Call Tracker</h1>
+        
+        <div class="menu-container">
+            <button id="hamburgerBtn" class="hamburger-btn">&#9776;</button>
+            <div id="dropdownMenu" class="dropdown-menu">
+                <button id="themeToggle" class="menu-item">🌙 Dark Mode</button>
+                <div class="menu-divider"></div>
+                <input type="file" id="importFileInput" accept=".csv" style="display: none;">
+                <button id="importBtn" class="menu-item">📂 Import CSV</button>
+                <button onclick="exportToCSV()" class="menu-item">📥 Export CSV</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-container">
+        <form id="callForm">
+            <div class="form-group">
+                <label for="clientName">Client Name / Business</label>
+                <input type="text" id="clientName" required placeholder="e.g., Acme Corp">
+            </div>
+
+            <div class="form-group">
+                <label for="callType">Call Type</label>
+                <select id="callType">
+                    <option value="Initial Consultation">Initial Consultation (+1 Day)</option>
+                    <option value="Standard Restock Order">Standard Restock Order (+14 Days)</option>
+                    <option value="Premium Package Setup">Premium Package Setup (+7 Days)</option>
+                    <option value="Billing / Invoice Follow-up">Billing / Invoice Follow-up (+3 Days)</option>
+                    <option value="Custom Request">Custom Request (Manual Date)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="callTime">When to Call <span class="hint-text">(Auto-calculates, adjust if needed)</span></label>
+                <div class="time-input-row">
+                    <input type="datetime-local" id="callTime" style="flex-grow: 1;">
+                    <label class="asap-label">
+                        <input type="checkbox" id="asapCheck" class="asap-checkbox">
+                        Call when available
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="urgency">Urgency Level</label>
+                <select id="urgency">
+                    <option value="Low">Low - Normal priority</option>
+                    <option value="Medium" selected>Medium - Time sensitive</option>
+                    <option value="High">High - Urgent / Immediate</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="callNotes">Custom Notes (Optional)</label>
+                <textarea id="callNotes" rows="3" placeholder="Enter talking points, specific requests, or account details..."></textarea>
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">Add to Call List</button>
+            <button type="button" id="cancelEditBtn" class="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
+        </form>
+    </div>
+
+    <div class="toolbar-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search by client name, type, or notes...">
+    </div>
+
+    <div id="callList">
+        </div>
+
+    <script>
+        // --- HAMBURGER MENU LOGIC ---
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        hamburgerBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            dropdownMenu.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdownMenu.contains(e.target) && e.target !== hamburgerBtn) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+
+        // --- DARK MODE LOGIC ---
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const currentTheme = localStorage.getItem('theme');
+        
+        if (currentTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggleBtn.innerText = '☀️ Light Mode';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            let theme = 'light';
+            if (document.body.classList.contains('dark-mode')) {
+                theme = 'dark';
+                themeToggleBtn.innerText = '☀️ Light Mode';
+            } else {
+                themeToggleBtn.innerText = '🌙 Dark Mode';
+            }
+            localStorage.setItem('theme', theme);
+            dropdownMenu.classList.remove('show'); 
+        });
+
+        // --- AUTO-SCHEDULING RULES ---
+        const templateTimeframes = {
+            "Initial Consultation": 1,         
+            "Standard Restock Order": 14,      
+            "Premium Package Setup": 7,        
+            "Billing / Invoice Follow-up": 3,  
+            "Custom Request": 0                
+        };
+
+        const callTypeSelect = document.getElementById('callType');
+        const callTimeInput = document.getElementById('callTime');
+        const asapCheck = document.getElementById('asapCheck');
+        const searchInput = document.getElementById('searchInput');
+
+        asapCheck.addEventListener('change', function() {
+            if (this.checked) {
+                callTimeInput.disabled = true;
+                callTimeInput.value = '';
+            } else {
+                callTimeInput.disabled = false;
+                autoSetDate();
+            }
+        });
+
+        function autoSetDate() {
+            if (editingCallId !== null) return; 
+            if (asapCheck.checked) return; 
+
+            const selectedTemplate = callTypeSelect.value;
+            const daysToAdd = templateTimeframes[selectedTemplate];
+
+            const futureDate = new Date();
+            futureDate.setDate(futureDate.getDate() + daysToAdd);
+            
+            const offset = futureDate.getTimezoneOffset() * 60000;
+            const formattedDate = (new Date(futureDate.getTime() - offset)).toISOString().slice(0, 16);
+            
+            callTimeInput.value = formattedDate;
+        }
+
+        callTypeSelect.addEventListener('change', autoSetDate);
+        
+
+        // --- CORE TRACKER LOGIC ---
+        let calls = JSON.parse(localStorage.getItem('clientCalls')) || [];
+        const callForm = document.getElementById('callForm');
+        const callList = document.getElementById('callList');
+        const submitBtn = document.getElementById('submitBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        let editingCallId = null;
+
+        function renderCalls(filterText = '') {
+            callList.innerHTML = '';
+            
+            let displayCalls = calls.filter(call => {
+                const searchLower = filterText.toLowerCase();
+                return call.name.toLowerCase().includes(searchLower) || 
+                       call.template.toLowerCase().includes(searchLower) || 
+                       (call.notes && call.notes.toLowerCase().includes(searchLower));
+            });
+
+            displayCalls.sort((a, b) => {
+                if (a.time === 'ASAP' && b.time !== 'ASAP') return -1;
+                if (a.time !== 'ASAP' && b.time === 'ASAP') return 1;
+                if (a.time === 'ASAP' && b.time === 'ASAP') return 0;
+                return new Date(a.time) - new Date(b.time);
+            });
+
+            if (displayCalls.length === 0) {
+                callList.innerHTML = `<p class="empty-message">No calls found in your queue.</p>`;
+                return;
+            }
+
+            displayCalls.forEach((call) => {
+                const isAsap = call.time === 'ASAP';
+                const callDateText = isAsap ? 'When Available' : new Date(call.time).toLocaleString([], {year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                const card = document.createElement('div');
+                
+                card.className = `call-card urgency-${call.urgency}`;
+                
+                const notesHTML = call.notes 
+                    ? `<div class="call-notes"><strong>Notes:</strong> ${call.notes.replace(/\n/g, '<br>')}</div>` 
+                    : '';
+
+                card.innerHTML = `
+                    <h3>${call.name} <span class="urgency-tag tag-${call.urgency}">${call.urgency}</span></h3>
+                    <p><strong>Scheduled:</strong> ${isAsap ? `<strong>${callDateText}</strong>` : callDateText}</p>
+                    <p><strong>Call Type:</strong> ${call.template}</p>
+                    ${notesHTML}
+                    <div class="card-actions">
+                        <button class="action-btn edit-btn" onclick="editCall(${call.id})" title="Edit Call Details">Edit</button>
+                        <select class="action-btn followup-select" onchange="followUpCall(${call.id}, this.value)">
+                            <option value="" disabled selected>Follow Up...</option>
+                            <option value="1">+1 Day</option>
+                            <option value="3">+3 Days</option>
+                            <option value="7">+1 Week</option>
+                            <option value="14">+2 Weeks</option>
+                            <option value="30">+1 Month</option>
+                        </select>
+                        <button class="action-btn delete-btn" onclick="deleteCall(${call.id})" title="Mark as Completed">Mark Done</button>
+                    </div>
+                `;
+                callList.appendChild(card);
+            });
+        }
+
+        function editCall(id) {
+            const call = calls.find(c => c.id === id);
+            if (!call) return;
+
+            document.getElementById('clientName').value = call.name;
+            document.getElementById('callType').value = call.template;
+            document.getElementById('urgency').value = call.urgency;
+            document.getElementById('callNotes').value = call.notes || '';
+
+            if (call.time === 'ASAP') {
+                asapCheck.checked = true;
+                callTimeInput.value = '';
+                callTimeInput.disabled = true;
+            } else {
+                asapCheck.checked = false;
+                callTimeInput.value = call.time;
+                callTimeInput.disabled = false;
+            }
+
+            editingCallId = id;
+            submitBtn.innerText = "Update Call";
+            submitBtn.style.backgroundColor = "#e67e22"; 
+            cancelEditBtn.style.display = "block"; 
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingCallId = null;
+            callForm.reset();
+            document.getElementById('urgency').value = "Medium";
+            asapCheck.checked = false;
+            callTimeInput.disabled = false;
+            submitBtn.innerText = "Add to Call List";
+            submitBtn.style.backgroundColor = "#3498db";
+            cancelEditBtn.style.display = "none";
+            autoSetDate();
+        }
+
+        callForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const isAsap = asapCheck.checked;
+            const timeVal = callTimeInput.value;
+
+            if (!isAsap && !timeVal) {
+                alert("Please select a date/time or check 'Call when available'.");
+                return;
+            }
+
+            const callData = {
+                name: document.getElementById('clientName').value,
+                time: isAsap ? 'ASAP' : timeVal,
+                template: document.getElementById('callType').value,
+                urgency: document.getElementById('urgency').value,
+                notes: document.getElementById('callNotes').value
+            };
+
+            if (editingCallId !== null) {
+                const index = calls.findIndex(c => c.id === editingCallId);
+                if (index !== -1) {
+                    calls[index] = { ...callData, id: editingCallId };
+                }
+                cancelEdit(); 
+            } else {
+                callData.id = Date.now();
+                calls.push(callData);
+                callForm.reset();
+                document.getElementById('urgency').value = "Medium"; 
+                asapCheck.checked = false;
+                callTimeInput.disabled = false;
+                autoSetDate(); 
+            }
+
+            localStorage.setItem('clientCalls', JSON.stringify(calls));
+            searchInput.value = ''; 
+            renderCalls();
+        });
+
+        searchInput.addEventListener('input', function(e) {
+            renderCalls(e.target.value);
+        });
+
+        function followUpCall(id, daysToFollowUp) {
+            if (!daysToFollowUp) return; 
+            const callIndex = calls.findIndex(c => c.id === id);
+            if (callIndex === -1) return;
+
+            const call = calls[callIndex];
+            
+            const currentDate = call.time === 'ASAP' ? new Date() : new Date(call.time);
+            currentDate.setDate(currentDate.getDate() + parseInt(daysToFollowUp)); 
+            
+            const offset = currentDate.getTimezoneOffset() * 60000;
+            call.time = (new Date(currentDate.getTime() - offset)).toISOString().slice(0, 16);
+            
+            localStorage.setItem('clientCalls', JSON.stringify(calls));
+            renderCalls(searchInput.value);
+        }
+
+        function deleteCall(id) {
+            calls = calls.filter(call => call.id !== id);
+            localStorage.setItem('clientCalls', JSON.stringify(calls));
+            renderCalls(searchInput.value);
+        }
+
+        // --- EXPORT TO CSV ---
+        function exportToCSV() {
+            dropdownMenu.classList.remove('show'); 
+
+            if (calls.length === 0) {
+                alert("Your call list is currently empty!");
+                return;
+            }
+
+            let csvContent = "Client Name,Scheduled Date,Call Type,Urgency,Notes\n";
+            
+            const sortedCalls = [...calls].sort((a, b) => {
+                if (a.time === 'ASAP' && b.time !== 'ASAP') return -1;
+                if (a.time !== 'ASAP' && b.time === 'ASAP') return 1;
+                if (a.time === 'ASAP' && b.time === 'ASAP') return 0;
+                return new Date(a.time) - new Date(b.time);
+            });
+
+            sortedCalls.forEach(call => {
+                let name = `"${call.name.replace(/"/g, '""')}"`;
+                let date = call.time === 'ASAP' ? '"When Available"' : `"${new Date(call.time).toLocaleString()}"`;
+                let template = `"${call.template}"`;
+                let urgency = `"${call.urgency}"`;
+                let notes = call.notes ? `"${call.notes.replace(/"/g, '""').replace(/\n/g, ' ')}"` : '""';
+
+                csvContent += `${name},${date},${template},${urgency},${notes}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            const today = new Date().toISOString().split('T')[0];
+            link.setAttribute("download", `Call_Tracker_Export_${today}.csv`);
+            
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- IMPORT FROM CSV LOGIC ---
+        const importBtn = document.getElementById('importBtn');
+        const importFileInput = document.getElementById('importFileInput');
+
+        importBtn.addEventListener('click', () => {
+            importFileInput.click();
+            dropdownMenu.classList.remove('show');
+        });
+
+        importFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                processCSV(event.target.result);
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Reset so same file can be loaded again if needed
+        });
+
+        // Helper function to safely parse CSV rows holding quotes/commas
+        function parseCSVLine(text) {
+            let ret = [];
+            let inQuote = false;
+            let value = '';
+            for (let i = 0; i < text.length; i++) {
+                let char = text[i];
+                if (inQuote) {
+                    if (char === '"' && text[i + 1] === '"') {
+                        value += '"';
+                        i++; // skip escaped quote
+                    } else if (char === '"') {
+                        inQuote = false;
+                    } else {
+                        value += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuote = true;
+                    } else if (char === ',') {
+                        ret.push(value);
+                        value = '';
+                    } else {
+                        value += char;
+                    }
+                }
+            }
+            ret.push(value);
+            return ret;
+        }
+
+        function processCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length <= 1) {
+                alert("The CSV file appears to be empty or invalid.");
+                return;
+            }
+
+            const replaceExisting = confirm("Do you want to REPLACE your current list entirely? \n\nClick 'OK' to clear your current calls and load the CSV. \nClick 'Cancel' to ADD the CSV calls to your existing queue.");
+            let importedCalls = [];
+            
+            // Start at i=1 to skip the header row
+            for (let i = 1; i < lines.length; i++) {
+                const row = parseCSVLine(lines[i]);
+                if (row.length >= 4) {
+                    let [name, dateStr, type, urgency, notes] = row;
+                    
+                    let timeVal = 'ASAP';
+                    if (dateStr !== 'When Available' && dateStr !== '') {
+                        const parsedDate = new Date(dateStr);
+                        if (!isNaN(parsedDate)) {
+                            const offset = parsedDate.getTimezoneOffset() * 60000;
+                            timeVal = (new Date(parsedDate.getTime() - offset)).toISOString().slice(0, 16);
+                        }
+                    }
+
+                    importedCalls.push({
+                        id: Date.now() + i, 
+                        name: name.trim(),
+                        time: timeVal,
+                        template: type ? type.trim() : 'Custom Request',
+                        urgency: urgency ? urgency.trim() : 'Medium',
+                        notes: notes ? notes.trim() : ''
+                    });
+                }
+            }
+
+            if (replaceExisting) {
+                calls = importedCalls;
+            } else {
+                calls = [...calls, ...importedCalls];
+            }
+
+            localStorage.setItem('clientCalls', JSON.stringify(calls));
+            renderCalls();
+            alert(`Successfully imported ${importedCalls.length} calls!`);
+        }
+
+        // Initialize
+        autoSetDate();
+        renderCalls();
+    </script>
+</body>
+</html>
