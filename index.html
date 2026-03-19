@@ -117,11 +117,11 @@
         <div class="menu-container">
             <button id="hamburgerBtn" class="hamburger-btn">&#9776;</button>
             <div id="dropdownMenu" class="dropdown-menu">
-                <button id="themeToggle" class="menu-item">🌙 Dark Mode</button>
+                <button id="themeToggle" class="menu-item">Dark Mode</button>
                 <div class="menu-divider"></div>
                 <input type="file" id="importFileInput" accept=".csv" style="display: none;">
-                <button id="importBtn" class="menu-item">📂 Import CSV</button>
-                <button onclick="exportToCSV()" class="menu-item">📥 Export CSV</button>
+                <button id="importBtn" class="menu-item">Import CSV</button>
+                <button onclick="exportToCSV()" class="menu-item">Export CSV</button>
             </div>
         </div>
     </div>
@@ -139,11 +139,11 @@
                     <div class="form-group">
                         <label for="callType">Call Type</label>
                         <select id="callType">
-                            <option value="Initial Consultation">Initial Consultation (+1 Day)</option>
-                            <option value="Standard Restock Order">Standard Restock Order (+14 Days)</option>
-                            <option value="Premium Package Setup">Premium Package Setup (+7 Days)</option>
-                            <option value="Billing / Invoice Follow-up">Billing / Invoice Follow-up (+3 Days)</option>
-                            <option value="Custom Request">Custom Request (Manual Date)</option>
+                            <option value="Arrange Owner Pick-Up">Arrange Owner Pick-Up</option>
+                            <option value="Standard Issue Follow Up">Standard Issue Follow Up</option>
+                            <option value="EMR Follow Up">EMR Follow Up</option>
+                            <option value="Delivery/Shipping Issues">Delivery/Shipping Issues</option>
+                            <option value="Custom Issues">Custom Issues</option>
                         </select>
                     </div>
                     
@@ -209,7 +209,7 @@
         
         if (currentTheme === 'dark') {
             document.body.classList.add('dark-mode');
-            themeToggleBtn.innerText = '☀️ Light Mode';
+            themeToggleBtn.innerText = 'Light Mode';
         }
 
         themeToggleBtn.addEventListener('click', () => {
@@ -217,9 +217,9 @@
             let theme = 'light';
             if (document.body.classList.contains('dark-mode')) {
                 theme = 'dark';
-                themeToggleBtn.innerText = '☀️ Light Mode';
+                themeToggleBtn.innerText = 'Light Mode';
             } else {
-                themeToggleBtn.innerText = '🌙 Dark Mode';
+                themeToggleBtn.innerText = 'Dark Mode';
             }
             localStorage.setItem('theme', theme);
             dropdownMenu.classList.remove('show'); 
@@ -227,11 +227,11 @@
 
         // --- AUTO-SCHEDULING RULES ---
         const templateTimeframes = {
-            "Initial Consultation": 1,         
-            "Standard Restock Order": 14,      
-            "Premium Package Setup": 7,        
-            "Billing / Invoice Follow-up": 3,  
-            "Custom Request": 0                
+            "Arrange Owner Pick-Up": 0,         
+            "Standard Issue Follow Up": 1,      
+            "EMR Follow Up": 1,        
+            "Delivery/Shipping Issues": 1,  
+            "Custom Issues": 0                
         };
 
         const callTypeSelect = document.getElementById('callType');
@@ -560,7 +560,7 @@
                         id: Date.now() + i, 
                         name: name.trim(),
                         time: timeVal,
-                        template: type ? type.trim() : 'Custom Request',
+                        template: type ? type.trim() : 'Custom Issues',
                         urgency: urgency ? urgency.trim() : 'Medium',
                         notes: notes ? notes.trim() : ''
                     });
