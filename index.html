@@ -112,7 +112,7 @@
 <body>
 
     <div class="header-container">
-        <h1>Client Call Tracker</h1>
+        <h1>Call Tracker</h1>
         
         <div class="menu-container">
             <button id="hamburgerBtn" class="hamburger-btn">&#9776;</button>
@@ -132,8 +132,8 @@
             <div class="form-container">
                 <form id="callForm">
                     <div class="form-group">
-                        <label for="clientName">Client Name / Business</label>
-                        <input type="text" id="clientName" required placeholder="e.g., Acme Corp">
+                        <label for="clientName">Order Number</label>
+                        <input type="text" id="clientName" required placeholder="Order FM number">
                     </div>
 
                     <div class="form-group">
@@ -162,14 +162,14 @@
                         <label for="urgency">Urgency Level</label>
                         <select id="urgency">
                             <option value="Low">Low - Normal priority</option>
-                            <option value="Medium" selected>Medium - Time sensitive</option>
+                            <option value="Medium">Medium - Time sensitive</option>
                             <option value="High">High - Urgent / Immediate</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="callNotes">Custom Notes (Optional)</label>
-                        <textarea id="callNotes" rows="3" placeholder="Enter talking points, specific requests, or account details..."></textarea>
+                        <textarea id="callNotes" rows="3" placeholder="Decription of issue or important notes."></textarea>
                     </div>
 
                     <button type="submit" id="submitBtn" class="submit-btn">Add to Call List</button>
